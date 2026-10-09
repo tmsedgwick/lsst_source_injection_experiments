@@ -10,6 +10,8 @@ lsst_source_injection_experiments/deblending.py for the definitions.
 import argparse
 from pathlib import Path
 
+import numpy as np
+
 from lsst_source_injection_experiments.config import CONFIG
 from lsst_source_injection_experiments.pipeline import deblend_all
 
@@ -20,9 +22,10 @@ def main():
     parser.add_argument("--n-workers", type=int, default=1)
     args = parser.parse_args()
     deblend = deblend_all(args.run_dir, CONFIG, args.n_workers)
-    failed = deblend["deblend_error"].astype(bool)
-    print(f"Deblended {int((~failed).sum())} of {len(deblend)} injections"
-          + (f"; {int(failed.sum())} failed, e.g. {deblend.loc[failed, 'deblend_error'].iat[0]}" if failed.any() else ""))
+    errors = deblend["deblend_error"].to_numpy(str)
+    failed = errors != ""
+    print(f"Deblended {int(np.count_nonzero(~failed))} of {len(deblend)} injections"
+          + (f"; {int(np.count_nonzero(failed))} failed, e.g. {errors[failed][0]}" if failed.any() else ""))
 
 
 if __name__ == "__main__":

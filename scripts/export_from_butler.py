@@ -30,7 +30,7 @@ DEFAULTS = dict(repo="dp2", collections="dp2", skymap="lsst_cells_v1")
 
 def fitted_wcs(stack_wcs, bbox, step=64):
     """An astropy TAN-SIP WCS in the array pixels of bbox (pixel (0, 0) = bbox corner) fitted to the stack's WCS."""
-    import lsst.geom as geom
+    import lsst.geom as geom  # pyright: ignore[reportMissingImports]  (LSST stack)
 
     xs = np.linspace(0, bbox.getWidth() - 1, max(2, bbox.getWidth() // step + 1))
     ys = np.linspace(0, bbox.getHeight() - 1, max(2, bbox.getHeight() // step + 1))
@@ -58,7 +58,7 @@ def effective_visits(exposure):
 
 
 def export_coadd(butler, args):
-    import lsst.geom as geom
+    import lsst.geom as geom  # pyright: ignore[reportMissingImports]  (LSST stack)
 
     skymap = butler.get("skyMap", skymap=args.skymap)
     if args.tract is not None:
@@ -86,18 +86,26 @@ def export_coadd(butler, args):
     print(f"deep_coadd {data_id}, {bbox} -> {args.out}")
 
 
-def region_sky_corners(coadd):
+def exported_coadd(path):
+    """(coadd, its WCS) of a coadd exported by this script's coadd command."""
+    coadd = load_coadd(path)
+    if coadd.wcs is None:
+        raise ValueError(f"{path} has no WCS: export the coadd with this script's coadd command")
+    return coadd, coadd.wcs
+
+
+def region_sky_corners(coadd, wcs):
     ny, nx = coadd.shape
-    return coadd.wcs.pixel_to_world([0, nx - 1, nx - 1, 0], [0, 0, ny - 1, ny - 1])
+    return wcs.pixel_to_world([0, nx - 1, nx - 1, 0], [0, 0, ny - 1, ny - 1])
 
 
 def export_visits(butler, args):
-    import lsst.geom as geom
+    import lsst.geom as geom  # pyright: ignore[reportMissingImports]  (LSST stack)
 
-    coadd = load_coadd(args.coadd)
+    coadd, coadd_wcs = exported_coadd(args.coadd)
     ny, nx = coadd.shape
-    centre = coadd.wcs.pixel_to_world((nx - 1) / 2, (ny - 1) / 2)
-    corners = region_sky_corners(coadd)
+    centre = coadd_wcs.pixel_to_world((nx - 1) / 2, (ny - 1) / 2)
+    corners = region_sky_corners(coadd, coadd_wcs)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     n_saved = 0
     for band in BANDS:
@@ -141,10 +149,10 @@ def object_properties(table, pixel_scale, zeropoint):
 
 
 def export_objects(butler, args):
-    coadd = load_coadd(args.coadd)
-    corners = region_sky_corners(coadd)
+    coadd, coadd_wcs = exported_coadd(args.coadd)
+    corners = region_sky_corners(coadd, coadd_wcs)
     skymap = butler.get("skyMap", skymap=args.skymap)
-    import lsst.geom as geom
+    import lsst.geom as geom  # pyright: ignore[reportMissingImports]  (LSST stack)
 
     tract = skymap.findTract(geom.SpherePoint(float(np.mean(corners.ra.deg)), float(np.mean(corners.dec.deg)),
                                               geom.degrees)).getId()
@@ -152,7 +160,7 @@ def export_objects(butler, args):
         f"{band}_{name}" for band in BANDS for name in ("psfFlux", "cModelFlux", "extendedness")]
     table = butler.get(args.dataset, dataId=dict(skymap=args.skymap, tract=tract), parameters={"columns": columns})
     table = table.to_pandas() if hasattr(table, "to_pandas") else pd.DataFrame(table)
-    x, y = coadd.wcs.world_to_pixel(SkyCoord(table["coord_ra"].to_numpy(), table["coord_dec"].to_numpy(), unit="deg"))
+    x, y = coadd_wcs.world_to_pixel(SkyCoord(table["coord_ra"].to_numpy(), table["coord_dec"].to_numpy(), unit="deg"))
     ny, nx = coadd.shape
     inside = (x >= 0) & (x < nx) & (y >= 0) & (y < ny)
     objects = object_properties(table[inside], CONFIG["pixel_scale"], CONFIG["zeropoint"])
@@ -189,7 +197,7 @@ def main():
     if args.what == "coadd" and (args.tract is None) == (args.ra is None):
         parser.error("give --tract and --patch, or --ra and --dec")
 
-    from lsst.daf.butler import Butler  # LSST stack
+    from lsst.daf.butler import Butler  # pyright: ignore[reportMissingImports]  (LSST stack)
 
     butler = Butler(args.repo, collections=args.collections)
     dict(coadd=export_coadd, visits=export_visits, objects=export_objects)[args.what](butler, args)

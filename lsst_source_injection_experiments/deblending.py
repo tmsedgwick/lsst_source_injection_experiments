@@ -65,7 +65,7 @@ def deblend_injection(before_signal, before_variance, after_signal, after_varian
     injected_true = np.array([injection[f"flux_{band}"] for band in BANDS], float)
 
     is_injected = after["is_injected"].to_numpy(bool)
-    out = dict(n_sources_before=len(before), n_sources_after=len(after))
+    out: dict[str, float] = dict(n_sources_before=len(before), n_sources_after=len(after))
     if is_injected.any():
         measured = flux_after[np.argmax(is_injected)]
         out.update(inj_flux_r=measured[R_INDEX], inj_bias_r=percent_bias(measured[R_INDEX], injected_true[R_INDEX]),

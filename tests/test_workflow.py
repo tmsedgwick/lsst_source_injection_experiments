@@ -14,6 +14,7 @@ from lsst_source_injection_experiments.pipeline import deblend_all, draw_injecti
 
 def test_draws_stay_in_their_surface_brightness_bin():
     draws = draw_properties(load_reference(), 24.0, 0.25, 500, np.random.default_rng(0))
+    assert draws is not None
     assert list(draws.columns) == DRAW_COLUMNS and len(draws) == 500
     assert draws["mu_r"].between(23.5, 24.5).mean() > 0.9
 
@@ -43,10 +44,10 @@ def test_workflow(source, mode, n_workers, coadd, coadd_path, hosts, nh_dir, cfg
     injected = inject(injections, coadd_path, mode, tmp_path / "run", cfg, exposure_paths=exposure_paths,
                       nh_dir=nh_dir, n_workers=n_workers)
     tmp_path = tmp_path / "run"
-    assert injected["injected"].all()
+    assert injected["injected"].to_numpy(bool).all()
     assert (tmp_path / "injected").exists()
     recovery = recover_all(tmp_path, cfg, n_workers)
-    assert recovery["detected"].any()
+    assert recovery["detected"].to_numpy(bool).any()
     deblend = deblend_all(tmp_path, cfg, n_workers)
     assert (deblend["deblend_error"] == "").all()
     results = load_results(tmp_path)

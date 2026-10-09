@@ -1,9 +1,10 @@
 """Magnitudes, surface brightness, half-light sizes and the stellar-mass prescription."""
 
 import numpy as np
-from astropy.cosmology import FlatLambdaCDM
+from scipy.integrate import quad
 
-COSMOLOGY = FlatLambdaCDM(H0=70.0, Om0=0.3)
+H0, OMEGA_M = 70.0, 0.3  # flat Lambda-CDM, as in DMTN-335
+C_KM_S = 299792.458
 
 
 def flux_to_mag(flux, zeropoint):
@@ -47,7 +48,10 @@ def distance_modulus(z):
     z = np.asarray(z, float)
     out = np.full(z.shape, np.nan)
     good = np.isfinite(z) & (z > 0)
-    out[good] = COSMOLOGY.distmod(z[good]).value
+    for i in np.flatnonzero(good):
+        comoving, _ = quad(lambda u: 1.0 / np.sqrt(OMEGA_M * (1 + u) ** 3 + 1.0 - OMEGA_M), 0.0, z.flat[i])
+        luminosity_distance_pc = (1 + z.flat[i]) * comoving * C_KM_S / H0 * 1e6
+        out.flat[i] = 5.0 * np.log10(luminosity_distance_pc) - 5.0
     return out
 
 

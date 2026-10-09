@@ -115,6 +115,6 @@ def plot_performance(summary, source, out_path):
     n = int(np.median(summary["n_injections"])) if len(summary) else 0
     fig.suptitle(f"Detection and Deblending Performance vs Surface Brightness\n{method} – {n} iterations\n{properties}",
                  fontsize=14)
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.96))
     fig.savefig(out_path, dpi=150)
     plt.close(fig)

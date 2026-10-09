@@ -12,7 +12,7 @@ Random placement (BCGs): uniform inside the image.
 
 import numpy as np
 import pandas as pd
-from scipy.spatial import cKDTree
+from scipy.spatial import KDTree
 
 MATCH_COLUMNS = ["log_Re", "mu_r", "z", "logmass"]
 
@@ -27,7 +27,7 @@ def place_targeted(draws, hosts, shape, n_wanted, rng, cfg, used_hosts=None, use
     used_hosts = set() if used_hosts is None else used_hosts
     used_positions = [] if used_positions is None else used_positions
     host_xy = hosts[["x", "y"]].to_numpy(float)
-    tree = cKDTree(host_xy)
+    tree = KDTree(host_xy)
     host_values = {c: hosts[c].to_numpy(float) for c in MATCH_COLUMNS}
     host_re = 10 ** host_values["log_Re"]
     scale = {c: max(abs(float(np.median(draws[f"{c}_NN"]))), 1e-9) for c in MATCH_COLUMNS}
@@ -37,7 +37,7 @@ def place_targeted(draws, hosts, shape, n_wanted, rng, cfg, used_hosts=None, use
     for _, draw in draws.iterrows():
         if len(rows) >= n_wanted:
             break
-        mismatch = sum(np.abs(draw[f"{c}_NN"] - host_values[c]) / scale[c] for c in MATCH_COLUMNS)
+        mismatch = np.sum([np.abs(draw[f"{c}_NN"] - host_values[c]) / scale[c] for c in MATCH_COLUMNS], axis=0)
         candidates = np.argsort(np.nan_to_num(mismatch, nan=np.inf))[:cfg["host_candidates"]]
         placed = None
         for host in candidates:

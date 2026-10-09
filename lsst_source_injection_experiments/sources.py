@@ -96,8 +96,12 @@ def nh_template_paths(nh_dir, cfg):
 
 def read_nh_cube(path, cfg):
     """The pre-PSF ugrizy image cube of one New Horizon dwarf."""
+    key = f"{cfg['nh_projection']}/{cfg['nh_snapshot']}/{cfg['nh_redshift_key']}/image_full"
     with h5py.File(path, "r") as handle:
-        cube = handle[cfg["nh_projection"]][cfg["nh_snapshot"]][cfg["nh_redshift_key"]]["image_full"][()]
+        dataset = handle[key]
+        if not isinstance(dataset, h5py.Dataset):
+            raise ValueError(f"{path}: {key} is not an image cube")
+        cube = np.asarray(dataset[()], float)
     if cube.shape[0] != len(BANDS):
         raise ValueError(f"{path}: expected {len(BANDS)} bands (ugrizy), found {cube.shape[0]}")
     return np.nan_to_num(np.asarray(cube, float))
@@ -110,9 +114,9 @@ def resized(cube, scale):
     if min(shape) < 5:
         return None
     factors = (shape[0] / ny, shape[1] / nx)
-    if cube.ndim == 2:
-        return zoom(cube, factors, order=1, grid_mode=True, mode="grid-constant")
-    return np.stack([zoom(plane, factors, order=1, grid_mode=True, mode="grid-constant") for plane in cube])
+    planes = cube[None] if cube.ndim == 2 else cube
+    out = np.stack([np.asarray(zoom(plane, factors, order=1, grid_mode=True, mode="grid-constant")) for plane in planes])
+    return out[0] if cube.ndim == 2 else out
 
 
 def prepare_newhorizon(nh_cube, psf_kernels, target, colour_models, cfg):
@@ -125,6 +129,8 @@ def prepare_newhorizon(nh_cube, psf_kernels, target, colour_models, cfg):
     base_re = np.sqrt(base_npix) * cfg["pixel_scale"]
     scale = match_observed_radius(lambda s: resized(nh_cube[R_INDEX], s), re_target / base_re, re_target, psf_r, cfg)
     cube = resized(nh_cube, scale)
+    if cube is None:
+        raise ValueError("The New Horizon cube would be resized below 5 pixels")
     cube = np.stack([plane / plane.sum() if plane.sum() > 0 else plane for plane in np.clip(cube, 0.0, None)])
     re_measured, area = observed_half_light(cube[R_INDEX], psf_r, cfg["pixel_scale"])
 

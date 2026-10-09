@@ -59,6 +59,7 @@ def test_small_targets_are_raised_to_the_psf_size(nh_dir, coadd, cfg):
 def test_coadd_injection_adds_flux_and_shot_noise(bcg, coadd):
     with_n_eff = Coadd(coadd.signal, coadd.variance, coadd.psf_kernels, BANDS, coadd.origin, None, np.full(6, 4.0))
     patch = coadd_injection(with_n_eff, render(bcg, coadd.psf_kernels), 110, 110)
+    assert patch is not None
     assert patch.signal[R_INDEX].sum() == pytest.approx(bcg.fluxes[R_INDEX], rel=1e-3)
     np.testing.assert_allclose(patch.variance, np.clip(patch.signal, 0, None) / 4.0, rtol=1e-6)
 

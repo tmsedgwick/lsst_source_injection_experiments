@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.spatial import cKDTree
+from scipy.spatial import KDTree
 
 from lsst_source_injection_experiments.cosmos import PHOTOMETRIC_PATH, REFERENCE_PATH
 
@@ -41,8 +41,8 @@ def read_galaxies(path):
     for name, source in MAG_SOURCES.items():
         galaxies[name] = table[source]
     keep = (table["type"] == 0) & (table["flag_star"] == 0)
-    galaxies = galaxies[keep].replace([np.inf, -np.inf], np.nan).dropna()
-    galaxies = galaxies[galaxies["half_light_radius_arcsec"] > 0].reset_index(drop=True)
+    galaxies = galaxies.loc[keep].replace([np.inf, -np.inf], np.nan).dropna()
+    galaxies = galaxies.loc[galaxies["half_light_radius_arcsec"] > 0].reset_index(drop=True)
     galaxies["ur"] = galaxies["m_u"] - galaxies["m_r"]
     galaxies["log_Re"] = np.log10(galaxies["half_light_radius_arcsec"])
     galaxies["mu_r"] = galaxies["m_r"] + 2.5 * np.log10(np.pi * galaxies["half_light_radius_arcsec"] ** 2)
@@ -53,7 +53,7 @@ def nearest_neighbours(sample, neighbours):
     """Index into neighbours of each sample galaxy's nearest other neighbour on the sky, and the distance (arcsec)."""
     dec0 = np.radians(neighbours["dec"].mean())
     plane = lambda t: np.column_stack([t["ra"] * np.cos(dec0), t["dec"]]) * 3600.0
-    distance, index = cKDTree(plane(neighbours)).query(plane(sample), k=2)
+    distance, index = (np.asarray(a) for a in KDTree(plane(neighbours)).query(plane(sample), k=2))
     # the closest hit is the galaxy itself whenever it is in the neighbour pool
     itself = distance[:, 0] < 1e-6
     return np.where(itself, index[:, 1], index[:, 0]), np.where(itself, distance[:, 1], distance[:, 0])
@@ -65,16 +65,16 @@ def main():
     parser.add_argument("--max-z", type=float, default=0.4, help="injected galaxies' redshift limit (default 0.4)")
     parser.add_argument("--neighbour-max-mag-r", type=float, default=27.5,
                         help="faintest neighbour (r mag; default 27.5, the LSST 10-year depth)")
-    parser.add_argument("--training-rows", type=int, default=200_000, help="rows kept for training the photometric redshift and mass model")
+    parser.add_argument("--training-rows", type=int, default=200_000, help="rows kept to train the photometric redshift and mass model")
     args = parser.parse_args()
 
     galaxies = read_galaxies(args.catalogue)
-    neighbours = galaxies[galaxies["m_r"] <= args.neighbour_max_mag_r].reset_index(drop=True)
-    sample = neighbours[(neighbours["z"] > 0) & (neighbours["z"] < args.max_z)].reset_index(drop=True)
+    neighbours = galaxies.loc[galaxies["m_r"] <= args.neighbour_max_mag_r].reset_index(drop=True)
+    sample = neighbours.loc[(neighbours["z"] > 0) & (neighbours["z"] < args.max_z)].reset_index(drop=True)
     index, distance = nearest_neighbours(sample, neighbours)
     reference = sample.copy()
     for column in ["logmass", "z", "ur", "log_Re", "mu_r", "half_light_radius_arcsec"]:
-        reference[f"{column}_NN"] = neighbours[column].to_numpy()[index]
+        reference[f"{column}_NN"] = np.asarray(neighbours[column])[index]
     reference["log_d_NN_arcsecs"] = np.log10(distance)
     reference["log_d_NN_radii"] = np.log10(distance / reference["half_light_radius_arcsec_NN"])
     REFERENCE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +82,7 @@ def main():
 
     training = galaxies.sample(n=min(args.training_rows, len(galaxies)), random_state=0)
     columns = ["m_u", "m_g", "m_r", "m_i", "m_z", "m_y", "half_light_radius_arcsec", "z", "logmass"]
-    training[columns].astype(np.float32).reset_index(drop=True).to_parquet(PHOTOMETRIC_PATH)
+    pd.DataFrame(training[columns].astype(np.float32)).reset_index(drop=True).to_parquet(PHOTOMETRIC_PATH)
     print(f"{len(galaxies):,} galaxies; {len(neighbours):,} neighbours (r <= {args.neighbour_max_mag_r}); "
           f"{len(reference):,} reference galaxies at z < {args.max_z} -> {REFERENCE_PATH}; "
           f"{len(training):,} photometric training rows -> {PHOTOMETRIC_PATH}")

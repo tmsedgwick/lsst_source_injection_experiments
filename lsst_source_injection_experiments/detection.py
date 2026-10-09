@@ -51,7 +51,8 @@ def detect(signal, variance, psf_kernels, cfg):
         grown = binary_dilation(above, structure=(xx ** 2 + yy ** 2) <= radius ** 2)
     else:
         grown = above
-    labels, _ = label(grown, structure=np.ones((3, 3), int))
+    labels = np.zeros(grown.shape, np.int32)
+    label(grown, structure=np.ones((3, 3), int), output=labels)
     is_peak = above & (sn == maximum_filter(sn, size=3, mode="constant", cval=-np.inf))
     y, x = np.nonzero(is_peak)
     peaks = pd.DataFrame(dict(x=x.astype(float), y=y.astype(float), sn=sn[y, x], footprint=labels[y, x]))

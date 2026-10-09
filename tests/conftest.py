@@ -63,7 +63,8 @@ def nh_dir(tmp_path_factory, cfg):
         for b in range(len(BANDS)):
             cube[b] = disc * (1 + 0.2 * b)
             for _ in range(5):
-                cube[b] += 0.05 * gaussian((81, 81), *rng.uniform(25, 55, 2), 1.5)
+                x, y = rng.uniform(25, 55, 2)
+                cube[b] += 0.05 * gaussian((81, 81), x, y, 1.5)
         with h5py.File(folder / f"Rvir_mocks_V2_{k:05d}.h5", "w") as handle:
             handle.create_dataset(f"{cfg['nh_projection']}/{cfg['nh_snapshot']}/{cfg['nh_redshift_key']}/image_full",
                                   data=cube)

@@ -59,7 +59,7 @@ def main():
     args.run_dir.mkdir(parents=True, exist_ok=True)
     injected = inject(injections, args.coadd, args.mode, args.run_dir, cfg, exposure_paths=args.exposures,
                       nh_dir=args.nh_dir, n_workers=args.n_workers)
-    print(f"{int(injected['injected'].sum())} of {len(injected)} injections written to {args.run_dir} "
+    print(f"{int(np.count_nonzero(injected['injected'].to_numpy(bool)))} of {len(injected)} injections written to {args.run_dir} "
           f"({INJECTIONS_FILE}, injected/); median observed Re {np.nanmedian(injected['re_measured_arcsec']):.2f}\"")
 
 

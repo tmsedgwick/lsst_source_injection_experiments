@@ -50,7 +50,7 @@ def draw_properties(reference, mu_centre, half_width, n, rng):
         draws = values[0] + rng.normal(scale=everyone.std(ddof=0).to_numpy() * scott, size=(n, n_dim))
         return pd.DataFrame(draws, columns=DRAW_COLUMNS)
     scaler = StandardScaler().fit(values)
-    scaled = scaler.transform(values)
+    scaled = np.asarray(scaler.transform(values))
     draws = None
     if len(values) > n_dim:
         try:

@@ -15,6 +15,7 @@ import json
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,7 @@ import pandas as pd
 from .config import BANDS, MODES, SOURCES
 from .cosmos import draw_properties, fit_colour_models, load_reference
 from .deblending import deblend_injection
-from .images import (Patch, add_patch, coadd_injection, cutout, exposure_injection, load_coadd, load_exposures,
+from .images import (Coadd, Patch, add_patch, coadd_injection, cutout, exposure_injection, load_coadd, load_exposures,
                      recombine, save_coadd)
 from .placement import place_random, place_targeted
 from .recovery import recover
@@ -77,6 +78,8 @@ def prepare(row, coadd, cfg, nh_dir=None, colour_models=None):
     """The PreparedSource of one injection row, sized and scaled with the coadd's PSF."""
     target = dict(mu_r=row["mu_r"], Re_arcsec=max(1e-3, row["Re_arcsec"]))
     if row["source"] == "newhorizon":
+        if nh_dir is None:
+            raise ValueError("New Horizon injections need the template folder (nh_dir)")
         target.update(ur=row["ur"], z=row["z"], logmass=row["logmass"])
         cube = read_nh_cube(Path(nh_dir).expanduser() / row["template"], cfg)
         return prepare_newhorizon(cube, coadd.psf_kernels, target, colour_models, cfg)
@@ -84,7 +87,7 @@ def prepare(row, coadd, cfg, nh_dir=None, colour_models=None):
     return prepare_doublesersicbcg(coadd.psf_kernels, target, rng, cfg)
 
 
-_INJECT = {}
+_INJECT: dict[str, Any] = {}
 
 
 def _load_inject_inputs(coadd_path, exposure_paths, need_colours):
@@ -118,7 +121,7 @@ def inject(injections, coadd_path, mode, run_dir, cfg, exposure_paths=None, nh_d
         raise ValueError("calexp mode needs exposures")
     run_dir = Path(run_dir)
     (run_dir / "injected").mkdir(parents=True, exist_ok=True)
-    exposure_paths = [str(p) for p in exposure_paths] if mode == "calexp" else None
+    exposure_paths = [str(p) for p in exposure_paths or []] if mode == "calexp" else None
     need_colours = bool((injections["source"] == "newhorizon").any())
     _load_inject_inputs(coadd_path, exposure_paths, need_colours)
     coadd = _INJECT["coadd"]
@@ -147,15 +150,22 @@ def inject(injections, coadd_path, mode, run_dir, cfg, exposure_paths=None, nh_d
 
 # --------------------------------------------------------------------------------------- recover / deblend
 
-_BASELINE = None
+_BASELINE: Coadd | None = None
+
+
+def _baseline():
+    """The image injections are compared with, loaded by _load_baseline in this process."""
+    if _BASELINE is None:
+        raise RuntimeError("The baseline coadd is not loaded")
+    return _BASELINE
 
 
 def _cutouts(run_dir, row, cfg):
     """(before signal, before variance, after signal, after variance, x, y) of one injection's cutout."""
     with np.load(patch_path(run_dir, row["injection_id"])) as data:
         patch = Patch(int(data["x0"]), int(data["y0"]), data["signal"], data["variance"])
-    x0, y0, signal = cutout(_BASELINE.signal, row["x"], row["y"], cfg["half_box"])
-    _, _, variance = cutout(_BASELINE.variance, row["x"], row["y"], cfg["half_box"])
+    x0, y0, signal = cutout(_baseline().signal, row["x"], row["y"], cfg["half_box"])
+    _, _, variance = cutout(_baseline().variance, row["x"], row["y"], cfg["half_box"])
     return (signal, variance, add_patch(signal, x0, y0, patch, "signal"), add_patch(variance, x0, y0, patch, "variance"),
             row["x"] - x0, row["y"] - y0)
 
@@ -163,7 +173,7 @@ def _cutouts(run_dir, row, cfg):
 def _recover_one(args):
     run_dir, row, cfg = args
     before_s, before_v, after_s, after_v, x, y = _cutouts(run_dir, row, cfg)
-    summary, peaks = recover(before_s, before_v, after_s, after_v, _BASELINE.psf_kernels, x, y, cfg)
+    summary, peaks = recover(before_s, before_v, after_s, after_v, _baseline().psf_kernels, x, y, cfg)
     return dict(injection_id=row["injection_id"], **summary), peaks.assign(injection_id=row["injection_id"])
 
 
@@ -171,7 +181,7 @@ def _deblend_one(args):
     run_dir, row, peaks, cfg = args
     before_s, before_v, after_s, after_v, _, _ = _cutouts(run_dir, row, cfg)
     try:
-        metrics = deblend_injection(before_s, before_v, after_s, after_v, _BASELINE.psf_kernels, peaks, row, cfg)
+        metrics = deblend_injection(before_s, before_v, after_s, after_v, _baseline().psf_kernels, peaks, row, cfg)
         return dict(injection_id=row["injection_id"], deblend_error="", **metrics)
     except Exception as error:  # a failed fit is recorded, and the other injections still run
         return dict(injection_id=row["injection_id"], deblend_error=f"{type(error).__name__}: {error}")
@@ -211,9 +221,10 @@ def deblend_all(run_dir, cfg, n_workers=1, batch=24):
     recovery = pd.read_parquet(run_dir / RECOVERY_FILE)
     peaks = pd.read_parquet(run_dir / PEAKS_FILE)
     done = pd.read_parquet(run_dir / DEBLEND_FILE) if (run_dir / DEBLEND_FILE).exists() else pd.DataFrame()
-    todo = recovery[~recovery["injection_id"].isin(done["injection_id"] if len(done) else [])]
-    by_injection = dict(tuple(peaks.groupby("injection_id")))
-    tasks = [(run_dir, row, by_injection[row["injection_id"]], cfg) for _, row in todo.iterrows()]
+    todo = recovery.loc[~recovery["injection_id"].isin(done["injection_id"] if len(done) else [])]
+    rows_of = peaks.groupby("injection_id").indices  # injection id -> row positions of its peaks
+    tasks = [(run_dir, row, peaks.iloc[rows_of[injection_id]], cfg)
+             for injection_id, (_, row) in zip(todo["injection_id"].to_numpy(), todo.iterrows())]
     for start in range(0, len(tasks), batch):
         done = pd.concat([done, pd.DataFrame(_map(_deblend_one, tasks[start:start + batch], run_dir, n_workers))],
                          ignore_index=True)

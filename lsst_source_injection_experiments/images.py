@@ -15,6 +15,7 @@ onto the coadd grid through their WCSs, or, when neither has one, through their 
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from astropy.io import fits
@@ -80,9 +81,12 @@ def load_coadd(path):
 
 def save_coadd(path, coadd):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    extra = {} if coadd.n_eff is None else dict(n_eff=np.asarray(coadd.n_eff, float))
-    np.savez(path, signal=coadd.signal, variance=coadd.variance, psf_kernels=coadd.psf_kernels,
-             bands=np.array(coadd.bands), origin=np.array(coadd.origin), wcs_header=wcs_to_text(coadd.wcs), **extra)
+    arrays: dict[str, Any] = dict(signal=coadd.signal, variance=coadd.variance, psf_kernels=coadd.psf_kernels,
+                                  bands=np.array(coadd.bands), origin=np.array(coadd.origin),
+                                  wcs_header=wcs_to_text(coadd.wcs))
+    if coadd.n_eff is not None:
+        arrays["n_eff"] = np.asarray(coadd.n_eff, float)
+    np.savez(path, **arrays)
 
 
 def load_exposures(paths):
@@ -168,6 +172,8 @@ def warp_to_coadd(coadd, exposure, image, x0, y0, region):
             values[cy0:cy1, cx0:cx1] = image[sy0 + cy0:sy0 + cy1, sx0 + cx0:sx0 + cx1]
             coverage[cy0:cy1, cx0:cx1] = 1.0
         return values, coverage
+    if coadd.wcs is None or exposure.wcs is None:
+        raise ValueError(f"{exposure.name}: give both the coadd and the exposures a WCS, or neither")
     from reproject import reproject_interp
 
     source_wcs = exposure.wcs.slice((slice(y0, y0 + image.shape[0]), slice(x0, x0 + image.shape[1])))

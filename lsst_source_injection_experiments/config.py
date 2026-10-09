@@ -1,11 +1,13 @@
 """Settings shared by every step. Every function takes a cfg dict; pass a partial dict to override keys."""
 
+from typing import Any
+
 import numpy as np
 
 BANDS = ("u", "g", "r", "i", "z", "y")
 R_INDEX = BANDS.index("r")
 
-CONFIG = dict(
+CONFIG: dict[str, Any] = dict(
     pixel_scale=0.2,  # arcsec per pixel
     zeropoint=31.4,  # AB zeropoint of nJy fluxes
     seed=20261008,

@@ -10,7 +10,7 @@ the COSMOS properties of the drawn neighbours they are matched to.
 
 import numpy as np
 import pandas as pd
-from scipy.spatial import cKDTree
+from scipy.spatial import KDTree
 
 from .config import BANDS
 from .cosmos import predict_photometric
@@ -25,7 +25,7 @@ def segment(peaks, labels):
     y, x = np.nonzero(labels)
     if len(peaks) == 0 or len(y) == 0:
         return segments
-    tree = cKDTree(peaks[["x", "y"]].to_numpy(float))
+    tree = KDTree(peaks[["x", "y"]].to_numpy(float))
     k = min(8, len(peaks))
     _, nearest = tree.query(np.column_stack([x, y]), k=k)
     nearest = nearest.reshape(len(x), k)
@@ -40,16 +40,18 @@ def segment(peaks, labels):
 
 def half_light_npix_per_segment(values, segments, n_segments):
     """Brightest-pixel count holding half of each segment's positive light (0 for segments without light)."""
-    flat_segments, flat_values = segments.ravel(), np.clip(values.ravel(), 0.0, None)
-    keep = flat_segments > 0
-    table = pd.DataFrame(dict(segment=flat_segments[keep], value=flat_values[keep]))
-    table = table.sort_values(["segment", "value"], ascending=[True, False])
-    cumulative = table.groupby("segment")["value"].cumsum().to_numpy()
-    total = table.groupby("segment")["value"].transform("sum").to_numpy()
-    below = table.assign(below=cumulative < 0.5 * total).groupby("segment")["below"].sum()
-    out = np.zeros(n_segments + 1, np.int64)
-    out[below.index.to_numpy()] = below.to_numpy() + 1
-    return out[1:]
+    seg, value = segments.ravel(), np.clip(values.ravel(), 0.0, None)
+    keep = seg > 0
+    seg, value = seg[keep], value[keep]
+    order = np.lexsort((-value, seg))  # by segment, brightest first
+    seg, value = seg[order], value[order]
+    cumulative = np.cumsum(value)
+    first = np.searchsorted(seg, seg)  # index of each pixel's segment's first pixel
+    within = cumulative - np.where(first > 0, cumulative[first - 1], 0.0)
+    total = np.bincount(seg, weights=value, minlength=n_segments + 1)
+    below = np.bincount(seg, weights=within < 0.5 * total[seg], minlength=n_segments + 1).astype(np.int64)
+    has_light = total > 0
+    return np.where(has_light, below + 1, 0)[1:]
 
 
 def measure_objects(coadd, cfg):
