@@ -1,0 +1,18 @@
+.vscode/
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
+.DS_Store
+.pytest_cache/
+
+# Data and runs (large; keep out of git), except the COSMOS2025 reference tables shipped in data/
+*.npy
+*.npz
+*.csv
+*.parquet
+*.h5
+*.png
+!data/*.parquet
+runs/

@@ -1,0 +1,17 @@
+# Versions the workflow was verified with (Python 3.12).
+numpy==2.5.3
+scipy==1.18.1
+pandas==3.0.6
+pyarrow==25.0.1
+scikit-learn==1.9.1
+matplotlib==3.11.2
+h5py==3.16.0
+astropy==8.0.1
+reproject==0.21.0
+# scarlet lite (the LSST deblender) is not on PyPI; it is part of the LSST stack (e.g. the Rubin Science Platform).
+# Elsewhere build it from source, pointing it at Eigen headers (on macOS: brew install eigen):
+#   EIGEN_INCLUDE=$(brew --prefix)/include/eigen3 pip install git+https://github.com/lsst/scarlet_lite.git
+# The LSST stack itself (lsst.daf.butler, lsst.afw, lsst.geom) is only needed by scripts/export_from_butler.py.
+
+# Install this repo itself (editable) so `import lsst_source_injection` works from anywhere.
+-e .
