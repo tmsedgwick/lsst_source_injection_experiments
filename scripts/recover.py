@@ -4,14 +4,14 @@
 
 Detects peaks in each injection's cutout before and after injecting (S/N >= 5 in the PSF-smoothed r band, noise
 from the variance plane) and writes recovery.parquet (one row per injection) and peaks.parquet (the peaks, with
-their roles and matches, used by deblend.py). See lsst_source_injection/recovery.py for the definitions.
+their roles and matches, used by deblend.py). See lsst_source_injection_experiments/recovery.py for the definitions.
 """
 
 import argparse
 from pathlib import Path
 
-from lsst_source_injection.config import CONFIG
-from lsst_source_injection.pipeline import recover_all
+from lsst_source_injection_experiments.config import CONFIG
+from lsst_source_injection_experiments.pipeline import recover_all
 
 
 def main():

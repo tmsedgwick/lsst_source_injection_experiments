@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from lsst_source_injection.config import BANDS, CONFIG
-from lsst_source_injection.cosmos import load_reference
-from lsst_source_injection.images import Coadd, save_coadd
+from lsst_source_injection_experiments.config import BANDS, CONFIG
+from lsst_source_injection_experiments.cosmos import load_reference
+from lsst_source_injection_experiments.images import Coadd, save_coadd
 
 PSF_SIGMA_PIX = 1.8
 SIZE = 220

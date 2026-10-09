@@ -14,10 +14,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from lsst_source_injection.config import CONFIG
-from lsst_source_injection.cosmos import fit_photometric, load_photometric_training
-from lsst_source_injection.hosts import add_redshift_and_mass, measure_objects
-from lsst_source_injection.images import load_coadd
+from lsst_source_injection_experiments.config import CONFIG
+from lsst_source_injection_experiments.cosmos import fit_photometric, load_photometric_training
+from lsst_source_injection_experiments.hosts import add_redshift_and_mass, measure_objects
+from lsst_source_injection_experiments.images import load_coadd
 
 
 def main():

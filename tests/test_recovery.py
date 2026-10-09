@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from lsst_source_injection.config import BANDS
-from lsst_source_injection.deblending import deblend_injection
-from lsst_source_injection.detection import detect
-from lsst_source_injection.recovery import one_to_one_match, recover
+from lsst_source_injection_experiments.config import BANDS
+from lsst_source_injection_experiments.deblending import deblend_injection
+from lsst_source_injection_experiments.detection import detect
+from lsst_source_injection_experiments.recovery import one_to_one_match, recover
 from conftest import gaussian
 
 

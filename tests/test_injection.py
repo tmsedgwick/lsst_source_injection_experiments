@@ -3,11 +3,11 @@
 import numpy as np
 import pytest
 
-from lsst_source_injection.config import BANDS, R_INDEX
-from lsst_source_injection.cosmos import fit_colour_models, load_reference
-from lsst_source_injection.images import (Coadd, Exposure, coadd_injection, exposure_injection, recombine)
-from lsst_source_injection.photometry import flux_to_mag
-from lsst_source_injection.sources import (core_sersic_image, nh_template_paths, observed_half_light,
+from lsst_source_injection_experiments.config import BANDS, R_INDEX
+from lsst_source_injection_experiments.cosmos import fit_colour_models, load_reference
+from lsst_source_injection_experiments.images import (Coadd, Exposure, coadd_injection, exposure_injection, recombine)
+from lsst_source_injection_experiments.photometry import flux_to_mag
+from lsst_source_injection_experiments.sources import (core_sersic_image, nh_template_paths, observed_half_light,
                                            prepare_doublesersicbcg, prepare_newhorizon, read_nh_cube, render,
                                            render_band)
 

@@ -11,8 +11,8 @@ export_from_butler.py visits and pass those files instead.
 import argparse
 from pathlib import Path
 
-from lsst_source_injection.config import BANDS
-from lsst_source_injection.images import Exposure, load_coadd, save_exposure
+from lsst_source_injection_experiments.config import BANDS
+from lsst_source_injection_experiments.images import Exposure, load_coadd, save_exposure
 
 
 def main():

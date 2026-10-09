@@ -13,5 +13,5 @@ reproject==0.21.0
 #   EIGEN_INCLUDE=$(brew --prefix)/include/eigen3 pip install git+https://github.com/lsst/scarlet_lite.git
 # The LSST stack itself (lsst.daf.butler, lsst.afw, lsst.geom) is only needed by scripts/export_from_butler.py.
 
-# Install this repo itself (editable) so `import lsst_source_injection` works from anywhere.
+# Install this repo itself (editable) so `import lsst_source_injection_experiments` works from anywhere.
 -e .

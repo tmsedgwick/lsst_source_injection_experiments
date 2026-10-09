@@ -21,9 +21,9 @@ import pandas as pd
 from astropy.coordinates import SkyCoord
 from astropy.wcs.utils import fit_wcs_from_points
 
-from lsst_source_injection.config import BANDS, CONFIG
-from lsst_source_injection.images import Coadd, Exposure, load_coadd, save_coadd, save_exposure
-from lsst_source_injection.photometry import flux_to_mag
+from lsst_source_injection_experiments.config import BANDS, CONFIG
+from lsst_source_injection_experiments.images import Coadd, Exposure, load_coadd, save_coadd, save_exposure
+from lsst_source_injection_experiments.photometry import flux_to_mag
 
 DEFAULTS = dict(repo="dp2", collections="dp2", skymap="lsst_cells_v1")
 

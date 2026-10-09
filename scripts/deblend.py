@@ -4,14 +4,14 @@
 
 Run after recover.py. Writes deblend.parquet: the injected source's r-band and total flux bias and measured surface
 brightness (when detected), the nearest neighbour's flux bias (when recovered) and the rest-of-blend flux bias. See
-lsst_source_injection/deblending.py for the definitions.
+lsst_source_injection_experiments/deblending.py for the definitions.
 """
 
 import argparse
 from pathlib import Path
 
-from lsst_source_injection.config import CONFIG
-from lsst_source_injection.pipeline import deblend_all
+from lsst_source_injection_experiments.config import CONFIG
+from lsst_source_injection_experiments.pipeline import deblend_all
 
 
 def main():

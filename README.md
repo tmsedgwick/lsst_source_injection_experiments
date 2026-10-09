@@ -1,4 +1,4 @@
-# lsst_source_injection
+# lsst_source_injection_experiments
 
 Inject synthetic galaxies into LSST deep coadds, or into the single exposures they are built from, and measure how
 well detection and deblending recover them and the real objects around them, as a function of surface brightness.
@@ -24,8 +24,8 @@ Every injection is analysed on its own, against the same image without it.
 ## Install
 
 ```bash
-git clone https://github.com/tmsedgwick/lsst_source_injection.git
-cd lsst_source_injection
+git clone https://github.com/tmsedgwick/lsst_source_injection_experiments.git
+cd lsst_source_injection_experiments
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -134,7 +134,7 @@ neighbour and rest-of-blend; median r-band flux bias (symlog); and the same as a
 - **Variance**: injected light adds its shot noise, divided by the coadd's effective number of visits (calexp mode:
   per exposure, then recombined).
 
-All settings are in `lsst_source_injection/config.py`.
+All settings are in `lsst_source_injection_experiments/config.py`.
 
 ## Testing calexp mode without calexps
 

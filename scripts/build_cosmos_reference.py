@@ -10,7 +10,7 @@ Writes
     all redshifts, to give real LSST objects a photometric redshift and stellar mass.
 
 Galaxies are LePhare type 0 objects not flagged as stars, with a finite position, redshift, mass, Sersic radius and
-ugrizy magnitudes. The surface brightness is mu_r = m_r + 2.5 log10(pi Re^2) (see lsst_source_injection.config).
+ugrizy magnitudes. The surface brightness is mu_r = m_r + 2.5 log10(pi Re^2) (see lsst_source_injection_experiments.config).
 """
 
 import argparse
@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
 
-from lsst_source_injection.cosmos import PHOTOMETRIC_PATH, REFERENCE_PATH
+from lsst_source_injection_experiments.cosmos import PHOTOMETRIC_PATH, REFERENCE_PATH
 
 MAG_SOURCES = {"m_u": "mag_model_cfht-u", "m_g": "mag_model_hsc-g", "m_r": "mag_model_hsc-r",
                "m_i": "mag_model_hsc-i", "m_z": "mag_model_hsc-z", "m_y": "mag_model_hsc-y"}

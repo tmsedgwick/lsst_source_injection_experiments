@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from lsst_source_injection.config import BANDS
-from lsst_source_injection.cosmos import DRAW_COLUMNS, draw_properties, load_reference
-from lsst_source_injection.images import Exposure, save_exposure
-from lsst_source_injection.performance import plot_performance, summarise
-from lsst_source_injection.pipeline import deblend_all, draw_injections, inject, load_results, recover_all
+from lsst_source_injection_experiments.config import BANDS
+from lsst_source_injection_experiments.cosmos import DRAW_COLUMNS, draw_properties, load_reference
+from lsst_source_injection_experiments.images import Exposure, save_exposure
+from lsst_source_injection_experiments.performance import plot_performance, summarise
+from lsst_source_injection_experiments.pipeline import deblend_all, draw_injections, inject, load_results, recover_all
 
 
 def test_draws_stay_in_their_surface_brightness_bin():

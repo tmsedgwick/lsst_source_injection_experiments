@@ -22,9 +22,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from lsst_source_injection.config import CONFIG, MODES, SOURCES
-from lsst_source_injection.images import load_coadd
-from lsst_source_injection.pipeline import INJECTIONS_FILE, draw_injections, inject
+from lsst_source_injection_experiments.config import CONFIG, MODES, SOURCES
+from lsst_source_injection_experiments.images import load_coadd
+from lsst_source_injection_experiments.pipeline import INJECTIONS_FILE, draw_injections, inject
 
 
 def main():

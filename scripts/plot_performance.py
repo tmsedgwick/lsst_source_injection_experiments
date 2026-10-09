@@ -11,8 +11,8 @@ detection_and_deblending_vs_mu_r.png in the run folder (or --out).
 import argparse
 from pathlib import Path
 
-from lsst_source_injection.performance import plot_performance, summarise
-from lsst_source_injection.pipeline import load_results
+from lsst_source_injection_experiments.performance import plot_performance, summarise
+from lsst_source_injection_experiments.pipeline import load_results
 
 
 def main():

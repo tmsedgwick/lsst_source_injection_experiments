@@ -3,7 +3,7 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lsst_source_injection"
+name = "lsst_source_injection_experiments"
 version = "0.1.0"
 description = "Inject synthetic galaxies into LSST deep coadds or their exposures and measure detection and deblending"
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = ["numpy>=1.24", "scipy>=1.10", "pandas>=2.0", "pyarrow>=14", "sci
                 "h5py>=3.8", "astropy>=6.0", "reproject>=0.13"]
 
 [tool.setuptools.packages.find]
-include = ["lsst_source_injection*"]
+include = ["lsst_source_injection_experiments*"]
 
 [tool.ruff]
 line-length = 120
