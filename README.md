@@ -115,6 +115,49 @@ python scripts/plot_performance.py --run-dir runs/nh_deepcoadd
 Writes `summary.csv` and `detection_and_deblending_vs_mu_r.png`: detection fraction of the injected source, nearest
 neighbour and rest-of-blend; median r-band flux bias (symlog); and the same as a surface brightness bias Δμ_r.
 
+## Reproducing DMTN-335 (Experiment 1: New Horizon dwarfs, COSMOS-drawn properties)
+
+You need the New Horizon dwarf templates (`Rvir_mocks_V2_<id>.h5`, the 37 dwarfs of Martin et al. 2022 at z = 0.05).
+They are not distributed with this repo: ask the author (Tom Sedgwick) for them, and put them in one folder.
+
+On the Rubin Science Platform (LSST stack available; DMTN-335 used `/repo/main`, collection
+`LSSTCam/runs/DRP/20250501_20250609/w_2025_30/DM-51933`, skymap `lsst_cells_v1`, tract 9812):
+
+```bash
+R="--repo /repo/main --collections LSSTCam/runs/DRP/20250501_20250609/w_2025_30/DM-51933"
+python scripts/export_from_butler.py $R coadd --tract 9812 --patch <patch> --out region/coadd.npz
+python scripts/export_from_butler.py $R objects --coadd region/coadd.npz --out region/objects.parquet
+python scripts/export_from_butler.py $R visits --coadd region/coadd.npz --out-dir region/visits   # only for calexp mode
+```
+
+Then, anywhere:
+
+```bash
+python scripts/build_hosts.py --objects region/objects.parquet --out region/hosts.parquet
+python scripts/inject.py --source newhorizon --mode deepcoadd --coadd region/coadd.npz --hosts region/hosts.parquet \
+    --nh-dir <templates folder> --run-dir runs/nh --n-per-bin 100 --n-workers 4
+python scripts/recover.py --run-dir runs/nh --n-workers 4
+python scripts/deblend.py --run-dir runs/nh --n-workers 4
+python scripts/plot_performance.py --run-dir runs/nh
+```
+
+Use `--mode calexp --exposures region/visits/*.npz` to inject into the visit images instead, as DMTN-335 did.
+For the BCG experiment use `--source doublesersicbcg` (no `--hosts` or `--nh-dir` needed).
+
+Expect the same trends, not identical numbers, as DMTN-335:
+
+- COSMOS2025 replaces COSMOS2020 (UltraVISTA) for the property draws, and hosts get redshifts and stellar masses from a
+  COSMOS-trained random forest (the Bryant et al. polynomials diverge beyond z ≈ 0.5);
+- detection is this repo's peak finder (r band, S/N ≥ 5, noise from the variance plane) and deblending a direct
+  scarlet lite fit, rather than SourceDetectionTask and ScarletDeblendTask;
+- an injection counts as detected only if the peak near it is new or rose in S/N by at least the detection threshold
+  (proximity alone counts real objects the injection lands on, which inflated the faint end);
+- the figure plots measured values only.
+
+Run time: injection and recovery take seconds per injection; deblending takes from seconds (faint sources) to a
+minute or more (bright extended sources in large blends) per injection, and needs a few GB of memory per worker.
+`deblend.py` saves as it goes and resumes where it stopped. Keep `--n-workers` below your number of cores.
+
 ## Definitions
 
 - **Surface brightness**: `μ_r = m_r + 2.5 log10(A_half)`, the total r magnitude over the half-light area (of the
