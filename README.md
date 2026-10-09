@@ -4,6 +4,8 @@ Inject synthetic galaxies into LSST deep coadds, or into the single exposures th
 well detection and deblending recover them and the real objects around them, as a function of surface brightness.
 This is the injection experiment of DMTN-335 (*Quantifying LSST detection and deblender performance for LSB science*)
 as a reusable workflow.
+Not to be confused with the LSST pipelines' own injection package, `lsst.source.injection` (`source_injection`): this repo
+runs injection *experiments* (draws, placement, recovery, deblending and their statistics) around its own injection.
 
 Two kinds of injected source:
 
